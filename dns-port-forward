@@ -1,0 +1,72 @@
+#!/bin/bash
+
+WAN="enp0s25"
+
+Get_IP() {
+    echo `ifconfig $WAN | grep 'inet addr' | awk -F ':' '{print $2}' | awk '{print $1}'`
+}
+
+Get_dns_server() {
+    echo `cat /etc/resolv.conf | grep nameserver | head -n 1 | awk '{print $2}'`
+}
+
+Set_ip_forword() {
+    echo 1 > /proc/sys/net/ipv4/ip_forward
+}
+
+IP=`Get_IP`
+DNSIP=`Get_dns_server`
+
+Config() {
+    DNSPORT="$1"
+
+    Set_ip_forword
+
+    sudo iptables -t nat -A PREROUTING -p udp --dport $DNSPORT -j DNAT --to-destination $DNSIP:53
+    sudo iptables -t nat -A POSTROUTING -p udp -d $DNSIP --dport 53 -j SNAT --to-source $IP 
+}
+
+Clean_rule() {
+    DNSPORT="$1"
+
+    sudo iptables -t nat -D PREROUTING -p udp --dport $DNSPORT -j DNAT --to-destination $DNSIP:53
+    sudo iptables -t nat -D POSTROUTING -p udp -d $DNSIP --dport 53 -j SNAT --to-source $IP 
+}
+
+Status() {
+    sudo iptables -t nat -L PREROUTING -nv
+    sudo iptables -t nat -L POSTROUTING -nv
+}
+
+Usage() {
+    echo "Usage: $0 { config [dnsport] | clean [dnsport] }"
+}
+
+Parameter_judge() {
+    correct_num="$1"
+    real_num="$2"
+    if [ $correct_num != $real_num ];then
+        Usage
+    fi
+}
+
+case "$1" in 
+    config)
+        Parameter_judge 2 $#
+        Config $2
+        ;;
+
+    clean)
+        Parameter_judge 2 $#
+        Clean_rule $2
+        ;;
+
+    status)
+        Parameter_judge 1 $#
+        Status
+        ;;
+    
+    *)
+        Usage
+        ;;
+esac
