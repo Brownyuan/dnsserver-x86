@@ -1,13 +1,18 @@
 # dnsserver-x86
+This project redirect the data to it's dns-server and get the domain's ip back.
+
 
 ## Usage
-### config dns port:
-    ./dns-port-forward config [dnsport]
+### Install project :
+    ./dnssever-control.sh install [port]
 
-### clean dns port
-    ./dns-port-forward clean [dnsport]
+### Uninstall project :
+    ./dnssever-control.sh uninstall
 
-### get status
-    ./dns-port-forward status
+### Restart project :
+    ./dnssever-control.sh restart
+
+### Get status
+    ./dnssever-control.sh status
 
 
