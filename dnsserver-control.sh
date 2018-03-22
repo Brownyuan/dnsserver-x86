@@ -25,6 +25,7 @@ Config() {
 
     cp $tamplate/dns-port-forward.tamplate dns-port-forward
     sed -i "s/interface/$wan/g" dns-port-forward
+    chmod +x dns-port-forward
     sudo mv dns-port-forward $working_dir/
 
     cp $tamplate/dns.service.tamplate dns.service
@@ -38,14 +39,14 @@ Restore() {
 }
 
 Start() {
-    for cmd in start enable status
+    for cmd in "enable" "start" "status"
     do
         sudo systemctl $cmd dns.service
     done
 }
 
 Stop() {
-    for cmd in stop disable status
+    for cmd in "disable" "stop" "status"
     do 
         sudo systemctl $cmd dns.service
     done
