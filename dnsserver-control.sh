@@ -53,8 +53,10 @@ Stop() {
 }
 
 Status() {
-    sudo iptables -t nat -L PREROUTING -nv
-    sudo iptables -t nat -L POSTROUTING -nv
+    echo "iptables nat"
+    sudo iptables -t nat -S
+    echo -e "\niptables filter"
+    sudo iptables -t filter -S
 }
 
 case "$1" in 
