@@ -1,42 +1,8 @@
 #!/bin/bash
 
-WAN="enp0s25"
+# this env string will modified by dnsserver-control.sh
+WAN=interface
 
-Get_IP() {
-    echo `ifconfig $WAN | grep 'inet addr' | awk -F ':' '{print $2}' | awk '{print $1}'`
-}
-
-Get_dns_server() {
-    echo `cat /etc/resolv.conf | grep nameserver | head -n 1 | awk '{print $2}'`
-}
-
-Set_ip_forword() {
-    echo 1 > /proc/sys/net/ipv4/ip_forward
-}
-
-IP=`Get_IP`
-DNSIP=`Get_dns_server`
-
-Config() {
-    DNSPORT="$1"
-
-    Set_ip_forword
-
-    sudo iptables -t nat -A PREROUTING -p udp --dport $DNSPORT -j DNAT --to-destination $DNSIP:53
-    sudo iptables -t nat -A POSTROUTING -p udp -d $DNSIP --dport 53 -j SNAT --to-source $IP 
-}
-
-Clean_rule() {
-    DNSPORT="$1"
-
-    sudo iptables -t nat -D PREROUTING -p udp --dport $DNSPORT -j DNAT --to-destination $DNSIP:53
-    sudo iptables -t nat -D POSTROUTING -p udp -d $DNSIP --dport 53 -j SNAT --to-source $IP 
-}
-
-Status() {
-    sudo iptables -t nat -L PREROUTING -nv
-    sudo iptables -t nat -L POSTROUTING -nv
-}
 
 Usage() {
     echo "Usage: $0 { config [dnsport] | clean [dnsport] }"
@@ -50,6 +16,35 @@ Parameter_judge() {
     fi
 }
 
+Get_IP() {
+    echo `ifconfig $WAN | grep 'inet addr' | awk -F ':' '{print $2}' | awk '{print $1}'`
+}
+
+Get_dns_server() {
+    echo `cat /etc/resolv.conf | grep nameserver | head -n 1 | awk '{print $2}'`
+}
+
+IP=`Get_IP`
+DNSIP=`Get_dns_server`
+
+Config() {
+    DNSPORT="$1"
+
+    echo 1 > /proc/sys/net/ipv4/ip_forward
+    sudo iptables -t filter -P FORWARD ACCEPT
+
+    sudo iptables -t nat -A PREROUTING -p udp --dport $DNSPORT -j DNAT --to-destination $DNSIP:53
+    sudo iptables -t nat -A POSTROUTING -p udp -d $DNSIP --dport 53 -j SNAT --to-source $IP 
+}
+
+Clean_rule() {
+    DNSPORT="$1"
+
+    sudo iptables -t nat -D PREROUTING -p udp --dport $DNSPORT -j DNAT --to-destination $DNSIP:53
+    sudo iptables -t nat -D POSTROUTING -p udp -d $DNSIP --dport 53 -j SNAT --to-source $IP 
+}
+
+
 case "$1" in 
     config)
         Parameter_judge 2 $#
@@ -61,11 +56,6 @@ case "$1" in
         Clean_rule $2
         ;;
 
-    status)
-        Parameter_judge 1 $#
-        Status
-        ;;
-    
     *)
         Usage
         ;;
